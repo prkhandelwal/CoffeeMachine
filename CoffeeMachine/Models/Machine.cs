@@ -22,30 +22,53 @@ namespace CoffeeMachine.Models
 
         public async Task<HashSet<string>> StartPreparing()
         {
-            int numBeveragesToPrepare = Math.Min(NumOutlets, Beverages.Count());
-
+            int bevarageCounter = 0;
             var output = new HashSet<string>();
-
+            int numBeveragesToPrepare = Math.Min(NumOutlets, Beverages.Count());
             var tasks = new List<Task<string>>();
-
-            foreach (var beverage in Beverages)
+            //Added parallel tasks in batches
+            while (bevarageCounter < Beverages.Count())
             {
+                // Batch size
+                var beverage = Beverages[bevarageCounter];
                 string status = CheckRequirements(beverage);
-                if (String.IsNullOrEmpty(status))
-                {
-                    tasks.Add(Prepare(beverage));
-                    numBeveragesToPrepare--;
-                }
-                else
-                    output.Add(status);
                 if (numBeveragesToPrepare == 0)
                     break;
+                if (String.IsNullOrEmpty(status))
+                {
+                    tasks.Add(Prepare(beverage)); // Adding tasks in parallel
+                    bevarageCounter++;
+                }
+                else
+                {
+                    Console.WriteLine(status);
+                    output.Add(status);
+                    bevarageCounter++;
+                }
+
+                if(tasks.Count() == numBeveragesToPrepare)
+                {
+                    await Task.WhenAll(tasks);
+                    foreach (var task in tasks)
+                    {
+                        status = task.Result;
+                        Console.WriteLine(status);
+                        output.Add(status);
+                    }
+                    tasks.Clear();
+                }
             }
-            await Task.WhenAll(tasks);
-            foreach (var task in tasks)
+
+            if (tasks.Count() > 0)
             {
-                string status = task.Result;
-                output.Add(status);
+                await Task.WhenAll(tasks);
+                foreach (var task in tasks)
+                {
+                    var status = task.Result;
+                    Console.WriteLine(status);
+                    output.Add(status);
+                }
+                tasks.Clear();
             }
 
             return output;
@@ -87,7 +110,7 @@ namespace CoffeeMachine.Models
 
         public async Task<string> Prepare(Beverage beverage)
         {
-            await Task.Delay(1000);
+            await Task.Delay(1000); // Delay for simulating machine time
             foreach (var ingredient in beverage.Ingredients)
             {
                 if (!Inventory.ConsumeItem(ingredient.Name, ingredient.Quantity))

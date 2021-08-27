@@ -10,9 +10,9 @@ Console.WriteLine("Welcome to coffee machine");
 string fileName = "data.json";
 string jsonString = File.ReadAllText(fileName);
 var jsonObject = JsonConvert.DeserializeObject<dynamic>(jsonString);
-Console.WriteLine(jsonObject.machine.outlets.count_n);
 await RunMachine(jsonObject);
 
+// Parses Json input into required format and runs.
 static async Task RunMachine(dynamic input)
 {
 
@@ -42,10 +42,6 @@ static async Task RunMachine(dynamic input)
     }
 
     var machine = new Machine(numOutlets, beverages, new Inventory(items));
-    var output = await machine.StartPreparing();
-    foreach (var item in output)
-    {
-        Console.WriteLine(item);
-    }
+    await machine.StartPreparing();
 }
 
